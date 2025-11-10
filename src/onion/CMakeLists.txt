@@ -5,6 +5,7 @@ add_library(onion::engine ALIAS onion_engine)
 target_sources(onion_engine
   PRIVATE
     core/engine.cpp
+    renderer/renderer.cpp
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
@@ -22,7 +23,7 @@ target_include_directories(onion_engine
 # glfw/glad/glm/stb/assimp targets may differ depending on your fetch modules
 target_link_libraries(onion_engine
   PUBLIC
-#    glfw
+     glfw
 #    glad
 #    glm
   PRIVATE

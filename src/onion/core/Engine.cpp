@@ -17,4 +17,10 @@ Engine::~Engine()
 void Engine::Run()
 {
 	std::cout << "Engine running..." << std::endl;
+
+	m_Renderer.Start();
+
+	// Wait for user input to stop the engine
+	std::cout << "Press Enter to stop the engine..." << std::endl;
+	std::cin.get();
 }
