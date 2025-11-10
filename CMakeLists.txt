@@ -25,10 +25,11 @@ include(FetchContent)
 
 
 include(FetchGLFW)
-#include(FetchGLAD)
-#include(FetchGLM)
+include(FetchGLM)
 #include(FetchSTB)
 #include(FetchAssimp)
+
+add_subdirectory(external/glad)
 
 # Add engine library
 add_subdirectory(src/onion)

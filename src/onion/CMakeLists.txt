@@ -6,6 +6,7 @@ target_sources(onion_engine
   PRIVATE
     core/engine.cpp
     renderer/renderer.cpp
+    renderer/shader/shader.cpp
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
@@ -24,8 +25,8 @@ target_include_directories(onion_engine
 target_link_libraries(onion_engine
   PUBLIC
      glfw
-#    glad
-#    glm
+     glad
+     glm
   PRIVATE
     $<$<BOOL:${ASSIMP_FOUND}>:assimp::assimp>)
 

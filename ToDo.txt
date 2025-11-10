@@ -1,0 +1,12 @@
+
+1. Render Triangle
+
+2. Implement camera
+
+3. Implement controls
+
+4. Draw Cubes
+
+5. Add a SkyBox
+
+6. 

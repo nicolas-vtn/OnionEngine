@@ -1,11 +1,11 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
 #include <cstdio>
-
 #include <thread>
 
 #include "../renderer/renderer.hpp"
+
+using namespace Onion::Rendering;
 
 namespace Onion
 {

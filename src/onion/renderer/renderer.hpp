@@ -1,11 +1,14 @@
 #pragma once
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <thread>
 #include <string>
 
-namespace Onion
+#include "shader/shader.hpp"
+
+namespace Onion::Rendering
 {
 	class Renderer {
 
