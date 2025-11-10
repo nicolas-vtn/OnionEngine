@@ -7,6 +7,8 @@ target_sources(onion_engine
     core/engine.cpp
     renderer/renderer.cpp
     renderer/shader/shader.cpp
+    renderer/camera/camera.cpp
+    renderer/inputs_manager/inputs_manager.cpp
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )

@@ -1,9 +1,8 @@
 
-1. Render Triangle
-
 2. Implement camera
 
 3. Implement controls
+	- Make them Generic and configurable
 
 4. Draw Cubes
 
