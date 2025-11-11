@@ -20,7 +20,15 @@ glm::mat4 Camera::GetViewMatrix() const {
 	return glm::lookAt(Position, Position + Front, Up);
 }
 
-void Camera::UpdateFront() {
+void Onion::Rendering::Camera::UpdateYawPitchFromFront()
+{
+	glm::vec3 normalizedFront = glm::normalize(Front);
+
+	Pitch = glm::degrees(asin(normalizedFront.y));
+	Yaw = glm::degrees(atan2(normalizedFront.z, normalizedFront.x));
+}
+
+void Camera::UpdateFrontFromYawPitch() {
 	glm::vec3 front;
 	front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
 	front.y = sin(glm::radians(Pitch));

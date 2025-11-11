@@ -47,10 +47,20 @@ namespace Onion::Rendering
 		float m_CameraSpeed = 5.0f;
 
 	private:
-		InputsManager m_InputsManager;
-		InputsSnapshot m_InputsSnapshot;
+		Onion::Controls::InputsManager m_InputsManager;
+		std::shared_ptr<Onion::Controls::InputsSnapshot> m_InputsSnapshot;
+		void RegisterInputs();
+		int m_InputIdMoveForward;
+		int m_InputIdMoveBackward;
+		int m_InputIdMoveLeft;
+		int m_InputIdMoveRight;
+		int m_InputIdMoveUp;
+		int m_InputIdMoveDown;
+		int m_InputIdSpeedUp;
+		int m_InputIdUnfocus;
 
 	private:
-		void ProcessCameraMovement(const InputsSnapshot& inputs);
+		void ProcessCameraMovement(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);
+		void ProcessInputs(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);
 	};
 }

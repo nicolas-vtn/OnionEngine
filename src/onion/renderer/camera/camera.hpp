@@ -26,7 +26,8 @@ namespace Onion::Rendering {
 		float FarPlane = 2000.f;		  // Far clipping plane
 
 	private:
-		void UpdateFront();
+		void UpdateFrontFromYawPitch();
+		void UpdateYawPitchFromFront();
 
 		glm::mat4 m_Projection = glm::perspective(glm::radians(FovY), AspectRatio, NearPlane, FarPlane);
 		bool m_UpdatedProjectionMatrix = false;
@@ -44,6 +45,7 @@ namespace Onion::Rendering {
 		}
 		void SetFront(const glm::vec3& front) {
 			Front = front;
+			UpdateYawPitchFromFront();
 		}
 		glm::vec3 GetUp() const {
 			return Up;
@@ -53,14 +55,14 @@ namespace Onion::Rendering {
 		}
 		void SetYaw(float yaw) {
 			Yaw = yaw;
-			UpdateFront();
+			UpdateFrontFromYawPitch();
 		}
 		float GetPitch() const {
 			return Pitch;
 		}
 		void SetPitch(float pitch) {
 			Pitch = pitch;
-			UpdateFront();
+			UpdateFrontFromYawPitch();
 		}
 
 		glm::mat4 GetProjectionMatrix() const {

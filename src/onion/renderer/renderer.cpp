@@ -3,6 +3,7 @@
 #include <iostream>
 
 using namespace Onion::Rendering;
+using namespace Onion::Controls;
 
 static void error_callback(int code, const char* desc) {
 	std::fprintf(stderr, "GLFW error %d: %s\n", code, desc);
@@ -66,8 +67,6 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 
 	Shader shader("assets/shaders/simple.vert", "assets/shaders/simple.frag");
 
-	m_InputsManager.SetMouseCaptureEnabled(true);
-
 	while (!stopToken.stop_requested() && !glfwWindowShouldClose(m_Window)) {
 		// No GL calls needed; just clear to black if you like:
 		glClearColor(0.1f, 0.1f, 0.12f, 1.f);
@@ -81,6 +80,9 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		// Pool inputs
 		m_InputsManager.PoolInputs();
 		m_InputsSnapshot = m_InputsManager.GetInputsSnapshot();
+
+		// Process Global Inputs
+		ProcessInputs(m_InputsSnapshot);
 
 		// Process Camera Movement
 		ProcessCameraMovement(m_InputsSnapshot);
@@ -99,24 +101,36 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(16)); // Approx ~60 FPS
+		//std::this_thread::sleep_for(std::chrono::milliseconds(16)); // Approx ~60 FPS
 
 		glfwSwapBuffers(m_Window);
 		glfwPollEvents();
 	}
 }
 
-void Renderer::ProcessCameraMovement(const InputsSnapshot& inputs)
+void Onion::Rendering::Renderer::RegisterInputs()
 {
-	if (!inputs.MouseCaptureEnabled) {
+	m_InputIdMoveForward = m_InputsManager.RegisterInput(Key::W, InputConfig(false));
+	m_InputIdMoveBackward = m_InputsManager.RegisterInput(Key::S);
+	m_InputIdMoveLeft = m_InputsManager.RegisterInput(Key::A);
+	m_InputIdMoveRight = m_InputsManager.RegisterInput(Key::D);
+	m_InputIdMoveUp = m_InputsManager.RegisterInput(Key::Space);
+	m_InputIdMoveDown = m_InputsManager.RegisterInput(Key::LeftShift);
+	m_InputIdSpeedUp = m_InputsManager.RegisterInput(Key::LeftControl);
+	m_InputIdUnfocus = m_InputsManager.RegisterInput(Key::Escape);
+}
+
+void Renderer::ProcessCameraMovement(const std::shared_ptr<InputsSnapshot>& inputs)
+{
+	if (!inputs->Mouse.CaptureEnabled) {
 		return; // If mouse capture is not enabled, skip camera movement processing
 	}
 
 	// Camera's Orientation
-	if (inputs.MouseXoffset != 0.f || inputs.MouseYoffset != 0.f) {
-		float sensitivity = 0.1f;
-		float xoffset = inputs.MouseXoffset * sensitivity;
-		float yoffset = inputs.MouseYoffset * sensitivity;
+	if (inputs->Mouse.MovementOffsetChanged) {
+		const double sensitivity = 0.1f;
+		const double xoffset = inputs->Mouse.Xoffset * sensitivity;
+		const double yoffset = inputs->Mouse.Yoffset * sensitivity;
 
 		m_Camera.SetYaw(m_Camera.GetYaw() + xoffset);
 		m_Camera.SetPitch(m_Camera.GetPitch() + yoffset);
@@ -125,22 +139,12 @@ void Renderer::ProcessCameraMovement(const InputsSnapshot& inputs)
 			m_Camera.SetPitch(89.0f);
 		if (m_Camera.GetPitch() < -89.0f)
 			m_Camera.SetPitch(-89.0f);
-
-		// Updates the Camera's facing direction based on yaw and pitch
-		const float CamYaw = m_Camera.GetYaw();
-		const float CamPitch = m_Camera.GetPitch();
-		glm::vec3 front(0.f);
-		front.x = cos(glm::radians(CamYaw)) * cos(glm::radians(CamPitch));
-		front.y = sin(glm::radians(CamPitch));
-		front.z = sin(glm::radians(CamYaw)) * cos(glm::radians(CamPitch));
-		m_Camera.SetFront(glm::normalize(front));
 	}
 
-	// Camera's speed
 	// Adjust camera Speed
-	if (inputs.MouseScrollOffsetChanged) {
-		float xoffset, yoffset;
-		m_InputsManager.GetMouseScrollOffset(xoffset, yoffset);
+	if (inputs->Mouse.ScrollOffsetChanged) {
+		const double xoffset = inputs->Mouse.ScrollXoffset;
+		const double yoffset = inputs->Mouse.ScrollYoffset;
 		if (yoffset != 0.f) {
 			float coeefIncrease = 1.3f;
 			float coeefDecrease = 0.7f;
@@ -156,7 +160,7 @@ void Renderer::ProcessCameraMovement(const InputsSnapshot& inputs)
 	// Camera's Position
 	float velocity = m_CameraSpeed * m_DeltaTime;
 
-	if (inputs.KeyLCtrl) {
+	if (inputs->GetKeyState(m_InputIdSpeedUp).IsPressed) {
 		velocity *= 2.0f; // Double speed if left control is pressed
 	}
 
@@ -165,18 +169,38 @@ void Renderer::ProcessCameraMovement(const InputsSnapshot& inputs)
 	glm::vec3 frontXZ = glm::normalize(glm::vec3(CamFront.x, 0.0f, CamFront.z));
 	const glm::vec3 Up(0.0f, 1.0f, 0.0f); // Up vector
 
-	if (inputs.KeyW)
+	if (inputs->GetKeyState(m_InputIdMoveForward).IsPressed)
 		m_Camera.SetPosition(m_Camera.GetPosition() + frontXZ * velocity);
-	if (inputs.KeyS)
+	if (inputs->GetKeyState(m_InputIdMoveBackward).IsPressed)
 		m_Camera.SetPosition(m_Camera.GetPosition() - frontXZ * velocity);
-	if (inputs.KeyA)
+	if (inputs->GetKeyState(m_InputIdMoveLeft).IsPressed)
 		m_Camera.SetPosition(m_Camera.GetPosition() - glm::normalize(glm::cross(frontXZ, Up)) * velocity);
-	if (inputs.KeyD)
+	if (inputs->GetKeyState(m_InputIdMoveRight).IsPressed)
 		m_Camera.SetPosition(m_Camera.GetPosition() + glm::normalize(glm::cross(frontXZ, Up)) * velocity);
-	if (inputs.KeySpace) // Jump / up
+	if (inputs->GetKeyState(m_InputIdMoveUp).IsPressed) // Jump / up
 		m_Camera.SetPosition(m_Camera.GetPosition() + Up * velocity);
-	if (inputs.KeyLShift) // Down
+	if (inputs->GetKeyState(m_InputIdMoveDown).IsPressed) // Down
 		m_Camera.SetPosition(m_Camera.GetPosition() - Up * velocity);
+}
+
+void Renderer::ProcessInputs(const std::shared_ptr<InputsSnapshot>& inputs)
+{
+	if (inputs->GetKeyState(m_InputIdUnfocus).IsPressed && inputs->Mouse.CaptureEnabled) {
+		m_InputsManager.SetMouseCaptureEnabled(false);
+	}
+
+	const bool leftPressed = inputs->Mouse.LeftButtonPressed;
+	const bool rightPressed = inputs->Mouse.RightButtonPressed;
+	if ((leftPressed || rightPressed) && !inputs->Mouse.CaptureEnabled) {
+		m_InputsManager.SetMouseCaptureEnabled(true);
+	}
+
+	// Resize handling
+	if (inputs->Framebuffer.Resized) {
+		m_WindowWidth = inputs->Framebuffer.Width;
+		m_WindowHeight = inputs->Framebuffer.Height;
+		m_Camera.SetAspectRatio(static_cast<float>(m_WindowWidth) / static_cast<float>(m_WindowHeight));
+	}
 }
 
 void Renderer::InitWindow()
@@ -203,12 +227,6 @@ void Renderer::InitWindow()
 
 	glfwSwapInterval(1); // vsync
 
-	// ESC to close
-	glfwSetKeyCallback(m_Window, [](GLFWwindow* w, int key, int, int action, int) {
-		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(w, 1);
-		});
-
-
 	// Load OpenGL function pointers with glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cerr << "Failed to initialize GLAD\n";
@@ -217,4 +235,6 @@ void Renderer::InitWindow()
 
 	// Initialize Inputs Manager
 	m_InputsManager.Init(m_Window);
+	m_InputsManager.SetMouseCaptureEnabled(false);
+	RegisterInputs();
 }
