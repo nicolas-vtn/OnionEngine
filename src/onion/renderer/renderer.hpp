@@ -7,6 +7,7 @@
 #include <string>
 
 #include "shader/shader.hpp"
+#include "texture/texture.hpp"
 #include "camera/camera.hpp"
 #include "inputs_manager/inputs_manager.hpp"
 

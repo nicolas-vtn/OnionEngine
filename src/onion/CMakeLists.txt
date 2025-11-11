@@ -7,6 +7,7 @@ target_sources(onion_engine
     core/engine.cpp
     renderer/renderer.cpp
     renderer/shader/shader.cpp
+    renderer/texture/texture.cpp
     renderer/camera/camera.cpp
     renderer/inputs_manager/inputs_manager.cpp
   PUBLIC
@@ -29,6 +30,7 @@ target_link_libraries(onion_engine
      glfw
      glad
      glm
+     stb
   PRIVATE
     $<$<BOOL:${ASSIMP_FOUND}>:assimp::assimp>)
 
