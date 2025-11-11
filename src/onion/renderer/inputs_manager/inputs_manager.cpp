@@ -17,15 +17,21 @@ void InputsManager::Init(GLFWwindow* window) {
 }
 
 void InputsManager::PoolInputs() {
-	m_GlfwTime = glfwGetTime();
 
-	ResetFlags();
+	{
+		std::unique_lock<std::mutex> lockInputs(m_MutexSnapshot);
+		m_InputsSnapshot = nullptr;
+	}
+
+	m_GlfwTime = glfwGetTime();
 
 	PoolMouseMovement();
 	PoolMouseInputs();
 	PollKeyboardInputs();
 
 	UpdateInputsSnapshot();
+
+	ResetFlags();
 }
 
 void InputsManager::PoolMouseMovement() {
@@ -84,11 +90,6 @@ void InputsManager::PollKeyboardInputs() {
 
 void InputsManager::ResetFlags()
 {
-	{
-		std::unique_lock<std::mutex> lockInputs(m_MutexSnapshot);
-		m_InputsSnapshot = nullptr;
-	}
-
 	{
 		std::unique_lock<std::mutex> lockFramebuffer(m_MutexFramebuffer);
 		m_FramebufferState.Resized = false;

@@ -200,6 +200,9 @@ void Renderer::ProcessInputs(const std::shared_ptr<InputsSnapshot>& inputs)
 		m_WindowWidth = inputs->Framebuffer.Width;
 		m_WindowHeight = inputs->Framebuffer.Height;
 		m_Camera.SetAspectRatio(static_cast<float>(m_WindowWidth) / static_cast<float>(m_WindowHeight));
+
+		// Update the OpenGL viewport
+		glViewport(0, 0, m_WindowWidth, m_WindowHeight);
 	}
 }
 
