@@ -73,6 +73,8 @@ namespace Onion::Rendering
 		void UpdateShaderModel();
 		void DrawAppleModel();
 
+		void CleanupOpenGL();
+
 	private:
 		void ProcessCameraMovement(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);
 		void ProcessInputs(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);

@@ -109,12 +109,17 @@ void Shader::Compile(const char* vertexPath, const char* fragmentPath) {
 
 Shader::~Shader() {
 	if (ID != 0) {
-		glDeleteProgram(ID);
+		std::cout << "[SHADER] [WARNING] : Shader not deleted before destruction. There is a memory leak." << std::endl;
 	}
 }
 
 void Shader::Use() const {
 	glUseProgram(ID);
+}
+
+void Shader::Delete() {
+	glDeleteProgram(ID);
+	ID = 0;
 }
 
 void Shader::setBool(const std::string& name, bool value) const {

@@ -15,40 +15,11 @@ namespace Onion::Rendering {
 		AssetManager() = default;
 		~AssetManager() = default;
 
-		Texture* LoadTexture(const std::string& filePath) {
-			// Check if texture is already loaded
-			auto it = m_Textures.find(filePath);
-			if (it != m_Textures.end()) {
-				return it->second.get();
-			}
-			// Load new texture
-			auto texture = std::make_unique<Texture>(filePath);
-			texture->Bind();
-			if (!texture->HasBeenLoaded()) {
-				throw std::runtime_error("Failed to load texture: " + filePath);
-			}
-			// Store and return the texture
-			Texture* texturePtr = texture.get();
-			m_Textures[filePath] = std::move(texture);
-			return texturePtr;
-		}
+		Texture* LoadTexture(const std::string& filePath);
 
-		Material* CreateMaterial(const std::string& name) {
+		Material* CreateMaterial(const std::string& name);
 
-			// Check if material already exists
-			auto it = m_Materials.find(name);
-			if (it != m_Materials.end()) {
-				return it->second.get();
-			}
-
-			// Create new material
-			auto material = std::make_unique<Material>();
-
-			// Store and return the material
-			Material* materialPtr = material.get();
-			m_Materials[name] = std::move(material);
-			return materialPtr;
-		}
+		void FreeAllAssets();
 
 	private:
 		std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;

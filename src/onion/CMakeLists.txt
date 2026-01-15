@@ -10,6 +10,7 @@ target_sources(onion_engine
     renderer/mesh/mesh.cpp
     renderer/model/model.cpp
     renderer/material/material.cpp
+    renderer/asset_manager/asset_manager.cpp
     renderer/texture/texture.cpp
     renderer/camera/camera.cpp
     renderer/inputs_manager/inputs_manager.cpp

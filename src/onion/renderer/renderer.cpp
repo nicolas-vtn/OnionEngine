@@ -47,55 +47,6 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 
 	InitOpenGlState();
 
-	// Define triangle vertices
-	float vertices[] = {
-		// positions          // colors           // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-	};
-
-	//Create vertex buffer and vertex array
-	unsigned int VBO, VAO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// --- NEW: index data ---
-	unsigned int indices[] = {
-		0, 1, 2,   // first triangle
-		2, 3, 0    // second triangle
-	};
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	// --- FIX: correct strides (8 floats per vertex) ---
-	GLsizei stride = 8 * sizeof(float);
-
-	// position (loc=0): offset 0
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-	glEnableVertexAttribArray(0);
-
-	// color (loc=1): offset 3 floats
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	// uv (loc=2): offset 6 floats
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	glBindVertexArray(0);
-
-	//Shader shader("assets/shaders/simple.vert", "assets/shaders/simple.frag");
-	Shader shader("assets/shaders/texture_triangle.vert", "assets/shaders/texture_triangle.frag");
-	//Texture texture("assets/textures/container.jpg");
-
 	InitAppleModel();
 
 	while (!stopToken.stop_requested() && !glfwWindowShouldClose(m_Window)) {
@@ -123,31 +74,22 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		m_ViewMatrix = m_Camera.GetViewMatrix();
 		m_ViewProjMatrix = m_ProjectionMatrix * m_ViewMatrix;
 
-		//shader.Use();
-		//shader.setMat4("uView", m_ViewMatrix);
-		//shader.setMat4("uProj", m_ProjectionMatrix);
-		//shader.setMat4("uViewProj", m_ViewProjMatrix);
-		//shader.setMat4("uModel", glm::mat4(1.0f));
-
-		//texture.Bind();
-		//glBindVertexArray(VAO);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+		// ------ TESTS MODELS ------
 		UpdateShaderModel();
-
 		DrawAppleModel();
 
-
-		//std::this_thread::sleep_for(std::chrono::milliseconds(16)); // Approx ~60 FPS
 
 		glfwSwapBuffers(m_Window);
 		glfwPollEvents();
 	}
+
+	// Cleanup
+	CleanupOpenGL();
 }
 
 void Onion::Rendering::Renderer::RegisterInputs()
 {
-	m_InputIdMoveForward = m_InputsManager.RegisterInput(Key::W, InputConfig(false));
+	m_InputIdMoveForward = m_InputsManager.RegisterInput(Key::W);
 	m_InputIdMoveBackward = m_InputsManager.RegisterInput(Key::S);
 	m_InputIdMoveLeft = m_InputsManager.RegisterInput(Key::A);
 	m_InputIdMoveRight = m_InputsManager.RegisterInput(Key::D);
@@ -348,4 +290,10 @@ void Onion::Rendering::Renderer::DrawAppleModel()
 	appleMaterial->Roughness->Bind();
 
 	m_AppleModel.Draw(m_ShaderModel);
+}
+
+void Onion::Rendering::Renderer::CleanupOpenGL()
+{
+	m_AssetManager.FreeAllAssets();
+	m_ShaderModel.Delete();
 }
