@@ -22,7 +22,7 @@ namespace Onion::Rendering {
 	private:
 		float FovY = 45.0f;				  // Field of view in degrees
 		float AspectRatio = 16.0f / 9.0f; // Aspect ratio
-		float NearPlane = 0.1f;			  // Near clipping plane
+		float NearPlane = 0.01f;			  // Near clipping plane
 		float FarPlane = 2000.f;		  // Far clipping plane
 
 	private:

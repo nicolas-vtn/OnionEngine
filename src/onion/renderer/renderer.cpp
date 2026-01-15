@@ -45,6 +45,8 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 {
 	InitWindow();
 
+	InitOpenGlState();
+
 	// Define triangle vertices
 	float vertices[] = {
 		// positions          // colors           // texture coords
@@ -92,12 +94,14 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 
 	//Shader shader("assets/shaders/simple.vert", "assets/shaders/simple.frag");
 	Shader shader("assets/shaders/texture_triangle.vert", "assets/shaders/texture_triangle.frag");
-	Texture texture("assets/textures/container.jpg");
+	//Texture texture("assets/textures/container.jpg");
+
+	InitAppleModel();
 
 	while (!stopToken.stop_requested() && !glfwWindowShouldClose(m_Window)) {
 		// No GL calls needed; just clear to black if you like:
 		glClearColor(0.1f, 0.1f, 0.12f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Calculate Delta Time
 		double currentFrame = glfwGetTime();
@@ -119,15 +123,20 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		m_ViewMatrix = m_Camera.GetViewMatrix();
 		m_ViewProjMatrix = m_ProjectionMatrix * m_ViewMatrix;
 
-		shader.Use();
-		shader.setMat4("uView", m_ViewMatrix);
-		shader.setMat4("uProj", m_ProjectionMatrix);
-		shader.setMat4("uViewProj", m_ViewProjMatrix);
-		shader.setMat4("uModel", glm::mat4(1.0f));
+		//shader.Use();
+		//shader.setMat4("uView", m_ViewMatrix);
+		//shader.setMat4("uProj", m_ProjectionMatrix);
+		//shader.setMat4("uViewProj", m_ViewProjMatrix);
+		//shader.setMat4("uModel", glm::mat4(1.0f));
 
-		texture.Bind();
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//texture.Bind();
+		//glBindVertexArray(VAO);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		UpdateShaderModel();
+
+		DrawAppleModel();
+
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(16)); // Approx ~60 FPS
 
@@ -268,4 +277,75 @@ void Renderer::InitWindow()
 	m_InputsManager.Init(m_Window);
 	m_InputsManager.SetMouseCaptureEnabled(false);
 	RegisterInputs();
+}
+
+void Onion::Rendering::Renderer::InitOpenGlState()
+{
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_BACK);
+	//glFrontFace(GL_CCW);
+
+	glDisable(GL_CULL_FACE);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void Onion::Rendering::Renderer::InitAppleModel()
+{
+	// Create Model Shader
+	m_ShaderModel = Shader("assets/shaders/model.vert", "assets/shaders/model.frag");
+	m_ShaderModel.setInt("uAlbedo", 0);
+	m_ShaderModel.setInt("uRoughness", 1);
+
+	// Create Model
+	m_AppleModel = Model("assets/models/food_apple_01_4k/food_apple_01_4k.gltf");
+
+	// Create Material
+	Material* appleMaterial = m_AssetManager.CreateMaterial("Apple");
+	appleMaterial->Albedo = m_AssetManager.LoadTexture("assets/models/food_apple_01_4k/textures/food_apple_01_diff_4k.jpg");
+	appleMaterial->Normal = m_AssetManager.LoadTexture("assets/models/food_apple_01_4k/textures/food_apple_01_nor_gl_4k.jpg");
+	appleMaterial->Roughness = m_AssetManager.LoadTexture("assets/models/food_apple_01_4k/textures/food_apple_01_rough_4k.jpg");
+
+	// Assign Material to Model
+	m_AppleModel.SetMaterial(appleMaterial);
+}
+
+void Onion::Rendering::Renderer::UpdateShaderModel()
+{
+	m_ShaderModel.Use();
+
+	// Matrices
+	m_ShaderModel.setMat4("uView", m_ViewMatrix);
+	m_ShaderModel.setMat4("uProj", m_ProjectionMatrix);
+	m_ShaderModel.setMat4("uViewProj", m_ViewProjMatrix);
+	m_ShaderModel.setMat4("uModel", glm::mat4(1.0f));
+
+	// Lighting
+	m_ShaderModel.setVec3("uLightDir", glm::normalize(glm::vec3(-1.0f, -1.0f, -0.5f)));
+	m_ShaderModel.setVec3("uLightColor", glm::vec3(1.0f));
+	m_ShaderModel.setVec3("uAmbient", glm::vec3(0.08f));
+
+	// Camera
+	m_ShaderModel.setVec3("uCameraPos", m_Camera.GetPosition());
+
+	// Specular control
+	m_ShaderModel.setFloat("uSpecularStrength", 0.5f);
+
+}
+
+void Onion::Rendering::Renderer::DrawAppleModel()
+{
+	Material* appleMaterial = m_AppleModel.GetMaterial();
+
+	glActiveTexture(GL_TEXTURE0);
+	appleMaterial->Albedo->Bind();
+
+	glActiveTexture(GL_TEXTURE1);
+	appleMaterial->Roughness->Bind();
+
+	m_AppleModel.Draw(m_ShaderModel);
 }

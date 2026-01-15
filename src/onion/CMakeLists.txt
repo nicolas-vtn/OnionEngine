@@ -7,6 +7,9 @@ target_sources(onion_engine
     core/engine.cpp
     renderer/renderer.cpp
     renderer/shader/shader.cpp
+    renderer/mesh/mesh.cpp
+    renderer/model/model.cpp
+    renderer/material/material.cpp
     renderer/texture/texture.cpp
     renderer/camera/camera.cpp
     renderer/inputs_manager/inputs_manager.cpp
@@ -31,8 +34,9 @@ target_link_libraries(onion_engine
      glad
      glm
      stb
+     assimp::assimp
   PRIVATE
-    $<$<BOOL:${ASSIMP_FOUND}>:assimp::assimp>)
+)
 
 
 # Platform libs

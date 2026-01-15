@@ -10,6 +10,8 @@
 #include "texture/texture.hpp"
 #include "camera/camera.hpp"
 #include "inputs_manager/inputs_manager.hpp"
+#include "model/model.hpp"
+#include "asset_manager/asset_manager.hpp"
 
 namespace Onion::Rendering
 {
@@ -24,6 +26,7 @@ namespace Onion::Rendering
 
 	private:
 		void InitWindow();
+		void InitOpenGlState();
 
 		void RenderThreadFunction(std::stop_token stopToken);
 		std::jthread m_ThreadRenderer;
@@ -51,14 +54,24 @@ namespace Onion::Rendering
 		Onion::Controls::InputsManager m_InputsManager;
 		std::shared_ptr<Onion::Controls::InputsSnapshot> m_InputsSnapshot;
 		void RegisterInputs();
-		int m_InputIdMoveForward;
-		int m_InputIdMoveBackward;
-		int m_InputIdMoveLeft;
-		int m_InputIdMoveRight;
-		int m_InputIdMoveUp;
-		int m_InputIdMoveDown;
-		int m_InputIdSpeedUp;
-		int m_InputIdUnfocus;
+		int m_InputIdMoveForward = -1;
+		int m_InputIdMoveBackward = -1;
+		int m_InputIdMoveLeft = -1;
+		int m_InputIdMoveRight = -1;
+		int m_InputIdMoveUp = -1;
+		int m_InputIdMoveDown = -1;
+		int m_InputIdSpeedUp = -1;
+		int m_InputIdUnfocus = -1;
+
+		// ------------ TESTS ------------
+	private:
+		AssetManager m_AssetManager;
+		Model m_AppleModel;
+		Shader m_ShaderModel;
+
+		void InitAppleModel();
+		void UpdateShaderModel();
+		void DrawAppleModel();
 
 	private:
 		void ProcessCameraMovement(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);
