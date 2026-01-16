@@ -1,7 +1,1 @@
-
-
-4. Draw Cubes
-
-5. Add a SkyBox
-
-6. 
+- Add SkyBox

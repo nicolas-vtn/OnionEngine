@@ -107,9 +107,9 @@ void Renderer::ProcessCameraMovement(const std::shared_ptr<InputsSnapshot>& inpu
 
 	// Camera's Orientation
 	if (inputs->Mouse.MovementOffsetChanged) {
-		const double sensitivity = 0.1f;
-		const double xoffset = inputs->Mouse.Xoffset * sensitivity;
-		const double yoffset = inputs->Mouse.Yoffset * sensitivity;
+		const float sensitivity = 0.1f;
+		const float xoffset = static_cast<float>(inputs->Mouse.Xoffset * sensitivity);
+		const float yoffset = static_cast<float>(inputs->Mouse.Yoffset * sensitivity);
 
 		m_Camera.SetYaw(m_Camera.GetYaw() + xoffset);
 		m_Camera.SetPitch(m_Camera.GetPitch() + yoffset);
@@ -122,8 +122,7 @@ void Renderer::ProcessCameraMovement(const std::shared_ptr<InputsSnapshot>& inpu
 
 	// Adjust camera Speed
 	if (inputs->Mouse.ScrollOffsetChanged) {
-		const double xoffset = inputs->Mouse.ScrollXoffset;
-		const double yoffset = inputs->Mouse.ScrollYoffset;
+		const float yoffset = static_cast<float>(inputs->Mouse.ScrollYoffset);
 		if (yoffset != 0.f) {
 			float coeefIncrease = 1.3f;
 			float coeefDecrease = 0.7f;
@@ -137,7 +136,7 @@ void Renderer::ProcessCameraMovement(const std::shared_ptr<InputsSnapshot>& inpu
 	}
 
 	// Camera's Position
-	float velocity = m_CameraSpeed * m_DeltaTime;
+	float velocity = static_cast<float>(m_CameraSpeed * m_DeltaTime);
 
 	if (inputs->GetKeyState(m_InputIdSpeedUp).IsPressed) {
 		velocity *= 2.0f; // Double speed if left control is pressed
@@ -269,7 +268,7 @@ void Onion::Rendering::Renderer::UpdateShaderModel()
 	// Lighting
 	m_ShaderModel.setVec3("uLightDir", glm::normalize(glm::vec3(-1.0f, -1.0f, -0.5f)));
 	m_ShaderModel.setVec3("uLightColor", glm::vec3(1.0f));
-	m_ShaderModel.setVec3("uAmbient", glm::vec3(0.08f));
+	m_ShaderModel.setVec3("uAmbient", glm::vec3(0.5f));
 
 	// Camera
 	m_ShaderModel.setVec3("uCameraPos", m_Camera.GetPosition());

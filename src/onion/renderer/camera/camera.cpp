@@ -29,7 +29,7 @@ void Onion::Rendering::Camera::UpdateYawPitchFromFront()
 }
 
 void Camera::UpdateFrontFromYawPitch() {
-	glm::vec3 front;
+	glm::vec3 front{};
 	front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
 	front.y = sin(glm::radians(Pitch));
 	front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));

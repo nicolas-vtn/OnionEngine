@@ -9,7 +9,8 @@
 
 using namespace Onion::Rendering;
 
-Texture::Texture(const std::string& filePath) {
+Texture::Texture(const std::string& filePath, Type textureType) {
+	m_TextureType = textureType;
 	if (!LoadFromFile(filePath)) {
 		std::cout << "[TEXTURE] [ERROR] : Failed to load texture from file: " << filePath << std::endl;
 	}
@@ -44,27 +45,70 @@ bool Texture::LoadFromFile(const std::string& filePath) {
 	return true;
 }
 
-void Texture::UploadToGPU() const {
-
-	if (m_Data == nullptr) {
-		std::cout << "[TEXTURE] [ERROR] : No data to upload for texture: " << m_FilePath << std::endl;
+void Texture::UploadToGPU() const
+{
+	if (!m_Data) {
+		std::cout << "[TEXTURE] [ERROR] : No data to upload for texture: "
+			<< m_FilePath << std::endl;
 		return;
 	}
 
+	if (m_HasBeenUploadedToGPU) {
+		std::cout << "[TEXTURE] [WARNING] : Texture already uploaded: "
+			<< m_FilePath << std::endl;
+		return;
+	}
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	glGenTextures(1, &m_TextureID);
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_Width, m_Height, 0, m_NrChannels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, m_Data);
-	// glGenerateMipmap(GL_TEXTURE_2D);
-	//  Texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // No mipmap
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	stbi_image_free(m_Data);
 
-	m_Data = nullptr; // Data is freed after uploading to GPU
+	GLenum format = (m_NrChannels == 4) ? GL_RGBA : GL_RGB;
+
+	// -------------------------------------------------
+	// Texture type–dependent parameters
+	// -------------------------------------------------
+	if (m_TextureType == Type::PixelArt)
+	{
+		// Crisp pixels, no smoothing, no mipmaps
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+	else // Type::Classic
+	{
+		// Smooth filtering + mipmaps
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		format,
+		m_Width,
+		m_Height,
+		0,
+		format,
+		GL_UNSIGNED_BYTE,
+		m_Data
+	);
+
+	// Generate mipmaps only for non-pixel-art textures
+	if (m_TextureType == Type::Classic) {
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(m_Data);
+	m_Data = nullptr;
 
 	m_HasBeenUploadedToGPU = true;
 }
@@ -75,8 +119,7 @@ void Texture::Bind() const {
 		UploadToGPU();
 	}
 
-	glActiveTexture(GL_TEXTURE0);			   // Activate texture slot 0
-	glBindTexture(GL_TEXTURE_2D, m_TextureID); // Bind our atlas to slot 0
+	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 }
 
 void Texture::Unbind() const {

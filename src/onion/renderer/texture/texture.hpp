@@ -5,10 +5,18 @@
 namespace Onion::Rendering {
 
 	class Texture {
+
+	public:
+
+		enum class Type {
+			PixelArt,
+			Classic
+		};
+
 		// ------------ CONSTRUCTOR & DESTRUCTOR ------------
 	public:
 		Texture() = delete;
-		Texture(const std::string& filePath);
+		Texture(const std::string& filePath, Type textureType = Type::Classic);
 		~Texture();
 
 		// ------------ LOAD ------------
@@ -28,6 +36,8 @@ namespace Onion::Rendering {
 	private:
 		std::string m_FilePath = "";
 		mutable unsigned int m_TextureID = 0;
+
+		Type m_TextureType = Type::Classic;
 
 		void UploadToGPU() const;
 		mutable bool m_HasBeenUploadedToGPU = false;
