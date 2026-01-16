@@ -17,6 +17,7 @@
 #include "model/model.hpp"
 #include "asset_manager/asset_manager.hpp"
 #include "structs/transform.hpp"
+#include "skybox/skybox.hpp"
 
 namespace Onion::Rendering
 {
@@ -67,6 +68,10 @@ namespace Onion::Rendering
 		int m_InputIdMoveDown = -1;
 		int m_InputIdSpeedUp = -1;
 		int m_InputIdUnfocus = -1;
+
+		// ------------- SKYBOX ------------
+	private:
+		Skybox m_Skybox;
 
 		// ------------ IMGUI ------------
 	private:

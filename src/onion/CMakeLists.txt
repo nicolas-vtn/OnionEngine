@@ -12,6 +12,7 @@ target_sources(onion_engine
     renderer/material/material.cpp
     renderer/asset_manager/asset_manager.cpp
     renderer/texture/texture.cpp
+    renderer/skybox/skybox.cpp
     renderer/camera/camera.cpp
     renderer/inputs_manager/inputs_manager.cpp
   PUBLIC

@@ -92,6 +92,10 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		m_ViewMatrix = m_Camera.GetViewMatrix();
 		m_ViewProjMatrix = m_ProjectionMatrix * m_ViewMatrix;
 
+		// ------ SKYBOX ------
+		m_Skybox.Render(m_ViewMatrix, m_ProjectionMatrix);
+
+
 		// ------ TESTS MODELS ------
 		UpdateShaderModel();
 		DrawAppleModel();
