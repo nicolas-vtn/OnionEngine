@@ -3,6 +3,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 #include <thread>
 #include <string>
 
@@ -12,6 +16,7 @@
 #include "inputs_manager/inputs_manager.hpp"
 #include "model/model.hpp"
 #include "asset_manager/asset_manager.hpp"
+#include "structs/transform.hpp"
 
 namespace Onion::Rendering
 {
@@ -63,6 +68,18 @@ namespace Onion::Rendering
 		int m_InputIdSpeedUp = -1;
 		int m_InputIdUnfocus = -1;
 
+		// ------------ IMGUI ------------
+	private:
+		void InitImGui(GLFWwindow* window);
+		void BeginImGuiFrame();
+		void BuildImGuiDebugPanel();
+		void RenderImGui();
+		void ShutdownImGui();
+
+		// ------------ STATISTICS ------------
+	private:
+		double m_FpsAverage = 0.0;
+
 		// ------------ TESTS ------------
 	private:
 		AssetManager m_AssetManager;
@@ -75,8 +92,15 @@ namespace Onion::Rendering
 
 		void CleanupOpenGL();
 
+		Transform m_AppleTransform;
+		glm::vec3 m_AppleLightDirection = glm::normalize(glm::vec3(-1.0f, -1.0f, -0.5f));
+		glm::vec3 m_AppleLightColor = glm::vec3(1.0f);
+		glm::vec3 m_AppleAmbient = glm::vec3(0.5f);
+		float m_AppleSpecularStrength = 0.5f;
+
 	private:
 		void ProcessCameraMovement(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);
 		void ProcessInputs(const std::shared_ptr<Onion::Controls::InputsSnapshot>& inputs);
+
 	};
 }

@@ -1,5 +1,7 @@
 #include "renderer.hpp"
 
+#include "opengl_helper.h"
+
 #include <iostream>
 
 using namespace Onion::Rendering;
@@ -47,7 +49,13 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 
 	InitOpenGlState();
 
+	InitImGui(m_Window);
+
 	InitAppleModel();
+
+	int framesAccumulator = 0.0f;
+	double framesCounterStart = 0.0f;
+	double actualizationTime_s = 0.5f;
 
 	while (!stopToken.stop_requested() && !glfwWindowShouldClose(m_Window)) {
 		// No GL calls needed; just clear to black if you like:
@@ -59,6 +67,14 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		m_DeltaTime = currentFrame - m_LastFrame;
 		m_LastFrame = currentFrame;
 
+		// Calculate FPS Average
+		framesAccumulator++;
+		if (currentFrame - framesCounterStart >= actualizationTime_s) {
+			m_FpsAverage = static_cast<double>(framesAccumulator) / (currentFrame - framesCounterStart);
+			framesAccumulator = 0;
+			framesCounterStart = currentFrame;
+		}
+
 		// Pool inputs
 		m_InputsManager.PoolInputs();
 		m_InputsSnapshot = m_InputsManager.GetInputsSnapshot();
@@ -69,6 +85,8 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		// Process Camera Movement
 		ProcessCameraMovement(m_InputsSnapshot);
 
+		BeginImGuiFrame();
+
 		// Get Camera projection, view and ProjView Matix
 		m_ProjectionMatrix = m_Camera.GetProjectionMatrix();
 		m_ViewMatrix = m_Camera.GetViewMatrix();
@@ -78,12 +96,20 @@ void Renderer::RenderThreadFunction(std::stop_token stopToken)
 		UpdateShaderModel();
 		DrawAppleModel();
 
+		// ------ Build ImGui Panels ------
+		BuildImGuiDebugPanel();
+
+		// Render ImGui
+		RenderImGui();
 
 		glfwSwapBuffers(m_Window);
 		glfwPollEvents();
+
+		Onion::Debug::CheckGLError("RETRIEVE GL ERRORS", __FILE__, __LINE__);
 	}
 
 	// Cleanup
+	ShutdownImGui();
 	CleanupOpenGL();
 }
 
@@ -167,9 +193,8 @@ void Renderer::ProcessInputs(const std::shared_ptr<InputsSnapshot>& inputs)
 		m_InputsManager.SetMouseCaptureEnabled(false);
 	}
 
-	const bool leftPressed = inputs->Mouse.LeftButtonPressed;
 	const bool rightPressed = inputs->Mouse.RightButtonPressed;
-	if ((leftPressed || rightPressed) && !inputs->Mouse.CaptureEnabled) {
+	if ((rightPressed) && !inputs->Mouse.CaptureEnabled) {
 		m_InputsManager.SetMouseCaptureEnabled(true);
 	}
 
@@ -235,6 +260,109 @@ void Onion::Rendering::Renderer::InitOpenGlState()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+void Onion::Rendering::Renderer::InitImGui(GLFWwindow* window)
+{
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330 core");
+}
+
+
+void Onion::Rendering::Renderer::BeginImGuiFrame()
+{
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+}
+
+void Onion::Rendering::Renderer::BuildImGuiDebugPanel()
+{
+	// Debug panel
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(250, 500), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowCollapsed(false, ImGuiCond_FirstUseEver);
+
+	ImGui::Begin("Debug Panel");
+
+	ImGui::Text("FPS: %d", static_cast<int>(m_FpsAverage));
+
+	// ------------------ CAMERA SETTINGS -----------------------
+	if (ImGui::CollapsingHeader("Camera Settings")) {
+		// Camera position
+		glm::vec3 camPos = m_Camera.GetPosition();
+		if (ImGui::InputFloat3("Position##Cam", &camPos.x, "%.2f")) {
+			m_Camera.SetPosition(camPos);
+		}
+		// Front vector
+		glm::vec3 camFront = m_Camera.GetFront();
+		if (ImGui::InputFloat3("Front##Cam", &camFront.x, "%.2f")) {
+			m_Camera.SetFront(camFront);
+		}
+		// Yaw
+		float yaw = m_Camera.GetYaw();
+		if (ImGui::SliderFloat("Yaw##Cam", &yaw, -180.0f, 180.0f, "%.1f deg")) {
+			m_Camera.SetYaw(yaw);
+		}
+		// Pitch
+		float pitch = m_Camera.GetPitch();
+		if (ImGui::SliderFloat("Pitch##Cam", &pitch, -89.0f, 89.0f, "%.1f deg")) {
+			m_Camera.SetPitch(pitch);
+		}
+		// Speed
+		float speed = m_CameraSpeed;
+		if (ImGui::SliderFloat("Speed##Cam", &speed, 0.1f, 100.0f, "%.2f")) {
+			m_CameraSpeed = speed;
+		}
+		// FovY slider
+		float fovY = m_Camera.GetFovY(); // get current FovY from your camera class
+		if (ImGui::SliderFloat("FovY##Cam", &fovY, 20.0f, 120.0f, "%.1f deg")) {
+			m_Camera.SetFovY(fovY); // set the new value if user changed it
+		}
+	}
+
+	ImGui::Separator();
+
+	// ------------------ APPLE MODEL SETTINGS -----------------------
+	if (ImGui::CollapsingHeader("Apple Model Settings")) {
+		// Tranform
+		ImGui::InputFloat3("Position##Apple", &m_AppleTransform.Position.x, "%.2f");
+		ImGui::Text("Apple Rotation (Degrees)");
+		ImGui::SliderFloat("Pitch (X)", &m_AppleTransform.Rotation.x, -180.0f, 180.0f);
+		ImGui::SliderFloat("Yaw   (Y)", &m_AppleTransform.Rotation.y, -180.0f, 180.0f);
+		ImGui::SliderFloat("Roll  (Z)", &m_AppleTransform.Rotation.z, -180.0f, 180.0f);
+		ImGui::SliderFloat3("Scale##Apple", &m_AppleTransform.Scale.x, 0.01f, 5.0f, "%.2f");
+		// Light Direction
+		if (ImGui::InputFloat3("Light Direction##Apple", &m_AppleLightDirection.x, "%.2f")) {
+			m_AppleLightDirection = glm::normalize(m_AppleLightDirection);
+		}
+		// Light Color
+		ImGui::ColorEdit3("Light Color##Apple", &m_AppleLightColor.x);
+		// Ambient
+		ImGui::ColorEdit3("Ambient##Apple", &m_AppleAmbient.x);
+		// Specular Strength
+		ImGui::SliderFloat("Specular Strength##Apple", &m_AppleSpecularStrength, 0.0f, 1.0f, "%.2f");
+	}
+
+	ImGui::End();
+}
+
+void Onion::Rendering::Renderer::RenderImGui()
+{
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void Onion::Rendering::Renderer::ShutdownImGui()
+{
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+}
+
 void Onion::Rendering::Renderer::InitAppleModel()
 {
 	// Create Model Shader
@@ -263,18 +391,18 @@ void Onion::Rendering::Renderer::UpdateShaderModel()
 	m_ShaderModel.setMat4("uView", m_ViewMatrix);
 	m_ShaderModel.setMat4("uProj", m_ProjectionMatrix);
 	m_ShaderModel.setMat4("uViewProj", m_ViewProjMatrix);
-	m_ShaderModel.setMat4("uModel", glm::mat4(1.0f));
+	m_ShaderModel.setMat4("uModel", m_AppleTransform.GetModelMatrix());
 
 	// Lighting
-	m_ShaderModel.setVec3("uLightDir", glm::normalize(glm::vec3(-1.0f, -1.0f, -0.5f)));
-	m_ShaderModel.setVec3("uLightColor", glm::vec3(1.0f));
-	m_ShaderModel.setVec3("uAmbient", glm::vec3(0.5f));
+	m_ShaderModel.setVec3("uLightDir", glm::normalize(m_AppleLightDirection));
+	m_ShaderModel.setVec3("uLightColor", m_AppleLightColor);
+	m_ShaderModel.setVec3("uAmbient", m_AppleAmbient);
 
 	// Camera
 	m_ShaderModel.setVec3("uCameraPos", m_Camera.GetPosition());
 
 	// Specular control
-	m_ShaderModel.setFloat("uSpecularStrength", 0.5f);
+	m_ShaderModel.setFloat("uSpecularStrength", m_AppleSpecularStrength);
 
 }
 

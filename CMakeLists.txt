@@ -28,6 +28,7 @@ include(FetchGLFW)
 include(FetchGLM)
 include(FetchSTB)
 include(FetchAssimp)
+include(FetchImGui)
 
 add_subdirectory(external/glad)
 

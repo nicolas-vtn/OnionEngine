@@ -36,6 +36,7 @@ target_link_libraries(onion_engine
      glm
      stb
      assimp::assimp
+     imgui::imgui
   PRIVATE
 )
 
